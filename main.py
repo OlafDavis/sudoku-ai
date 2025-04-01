@@ -1,6 +1,7 @@
 import pygame
 import numpy as np
 import random
+import time
 
 # Initialize Pygame
 pygame.init()
@@ -9,7 +10,7 @@ pygame.init()
 WINDOW_SIZE = 540
 CELL_SIZE = WINDOW_SIZE // 9
 GRID_SIZE = 9
-BUTTON_HEIGHT = 40
+BUTTON_HEIGHT = 80  # Increased to accommodate two buttons
 
 # Colors
 WHITE = (255, 255, 255)
@@ -18,6 +19,7 @@ GRAY = (128, 128, 128)
 BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 GREEN = (0, 128, 0)
+PURPLE = (128, 0, 128)
 
 # Set up the display
 screen = pygame.display.set_mode((WINDOW_SIZE, WINDOW_SIZE + BUTTON_HEIGHT))
@@ -30,6 +32,10 @@ class Sudoku:
         self.selected = None
         self.original_numbers = set()
         self.solved = False
+        self.solving = False
+        self.solve_delay = 0.05  # Delay between steps in seconds
+        self.last_solve_time = 0
+        self.filled_cells = []  # Keep track of cells we've filled during solving
         self.generate_puzzle()
 
     def generate_puzzle(self):
@@ -160,6 +166,48 @@ class Sudoku:
             self.board[i, j] = self.solution[i, j]
         self.solved = False
 
+    def solve_step_by_step(self):
+        if self.solving:
+            current_time = time.time()
+            if current_time - self.last_solve_time < self.solve_delay:
+                return False
+            
+            # Find next empty cell
+            for i in range(9):
+                for j in range(9):
+                    if self.board[i, j] == 0:
+                        # Try numbers 1-9
+                        for num in range(1, 10):
+                            if self.is_valid_move(num, (i, j), self.board):
+                                self.board[i, j] = num
+                                self.filled_cells.append((i, j))  # Track this cell
+                                self.last_solve_time = current_time
+                                return True
+                        # If no valid number found, backtrack
+                        if self.filled_cells:  # If we have cells to backtrack
+                            last_i, last_j = self.filled_cells.pop()  # Get the last filled cell
+                            self.board[last_i, last_j] = 0  # Clear it
+                            return True
+                        else:  # If we can't backtrack anymore, puzzle is unsolvable
+                            self.solving = False
+                            return False
+            
+            # If no empty cells found, puzzle is solved
+            self.solved = True
+            self.solving = False
+            return True
+        return False
+
+    def start_solving(self):
+        if not self.solved:
+            self.solving = True
+            self.last_solve_time = 0
+            self.filled_cells = []  # Reset the filled cells list
+
+    def stop_solving(self):
+        self.solving = False
+        self.filled_cells = []  # Clear the filled cells list
+
 def draw_board(screen, game):
     # Draw grid lines
     for i in range(10):
@@ -202,23 +250,32 @@ def main():
     running = True
     clock = pygame.time.Clock()
     
-    # Create reveal button
-    button_width = 180
-    button_x = (WINDOW_SIZE - button_width) // 2
+    # Create buttons
+    button_width = 220
+    button_spacing = 20
+    total_buttons_width = button_width * 2 + button_spacing
+    start_x = (WINDOW_SIZE - total_buttons_width) // 2
     button_y = WINDOW_SIZE + 5
-    reveal_button = pygame.Rect(button_x, button_y, button_width, 30)
+    
+    reveal_button = pygame.Rect(start_x, button_y, button_width, 30)
+    solve_button = pygame.Rect(start_x + button_width + button_spacing, button_y, button_width, 30)
     
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
             elif event.type == pygame.MOUSEBUTTONDOWN:
-                # Check if reveal button was clicked
+                # Check if buttons were clicked
                 if reveal_button.collidepoint(event.pos):
                     if game.solved:
                         game.reset_puzzle()
                     else:
                         game.reveal_solution()
+                elif solve_button.collidepoint(event.pos):
+                    if game.solved:
+                        game.reset_puzzle()
+                    else:
+                        game.start_solving()
                 else:
                     # Adjust y-coordinate for the game board click
                     adjusted_pos = (event.pos[0], event.pos[1])
@@ -229,13 +286,21 @@ def main():
                     running = False
                 game.handle_key(event.key)
         
+        # Handle step-by-step solving
+        if game.solving:
+            game.solve_step_by_step()
+        
         screen.fill(WHITE)
         draw_board(screen, game)
         
-        # Draw reveal solution button
-        button_text = "Reset" if game.solved else "Reveal Solution"
-        button_color = GREEN if game.solved else BLUE
-        draw_button(screen, button_text, reveal_button, button_color)
+        # Draw buttons
+        reveal_text = "Reset" if game.solved else "Reveal Solution"
+        reveal_color = GREEN if game.solved else BLUE
+        draw_button(screen, reveal_text, reveal_button, reveal_color)
+        
+        solve_text = "Reset" if game.solved else "Solve Step by Step"
+        solve_color = GREEN if game.solved else PURPLE
+        draw_button(screen, solve_text, solve_button, solve_color)
         
         pygame.display.flip()
         clock.tick(60)
