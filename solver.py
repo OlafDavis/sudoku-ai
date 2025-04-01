@@ -28,17 +28,25 @@ class SudokuSolver:
         # Check group constraints
         for group, target_sum in self.groups:
             if pos in group:
-                # Find the other cell in the group
-                other_cell = group[0] if pos == group[1] else group[1]
-                other_value = self.board[other_cell[0], other_cell[1]]
+                # Calculate current sum of filled cells in the group
+                current_sum = sum(self.board[r, c] for r, c in group if self.board[r, c] != 0)
+                # Add the new number
+                new_sum = current_sum + num
                 
-                # If the other cell is filled, check if sum matches target
-                if other_value != 0:
-                    if num + other_value != target_sum:
+                # If this is the last empty cell in the group
+                empty_cells = sum(1 for r, c in group if self.board[r, c] == 0)
+                if empty_cells == 1:
+                    if new_sum != target_sum:
                         return False
-                # If the other cell is empty, check if the number is too large
-                elif num > target_sum - 1:  # -1 because minimum value is 1
-                    return False
+                # If there are still empty cells
+                else:
+                    # Check if the new sum would exceed the target
+                    if new_sum >= target_sum:
+                        return False
+                    # Check if remaining cells could make up the difference
+                    min_possible = empty_cells - 1  # Minimum possible sum for remaining cells
+                    if new_sum + min_possible > target_sum:
+                        return False
         
         return True
 
@@ -65,20 +73,22 @@ class SudokuSolver:
         # Apply group constraints
         for group, target_sum in self.groups:
             if pos in group:
-                # Find the other cell in the group
-                other_cell = group[0] if pos == group[1] else group[1]
-                other_value = self.board[other_cell[0], other_cell[1]]
+                # Calculate current sum of filled cells
+                current_sum = sum(self.board[r, c] for r, c in group if self.board[r, c] != 0)
+                # Count empty cells
+                empty_cells = sum(1 for r, c in group if self.board[r, c] == 0)
                 
-                if other_value != 0:
-                    # If other cell is filled, only allow the number that makes sum = target
-                    required = target_sum - other_value
+                if empty_cells == 1:
+                    # If this is the last empty cell, only allow the number that makes sum = target
+                    required = target_sum - current_sum
                     if required in possible:
                         possible = {required}
                     else:
                         possible = set()
                 else:
-                    # If other cell is empty, remove numbers that would make sum > target
-                    possible = {n for n in possible if n <= target_sum - 1}
+                    # If there are still empty cells, remove numbers that would make sum > target
+                    max_allowed = target_sum - current_sum - (empty_cells - 1)
+                    possible = {n for n in possible if n <= max_allowed}
         
         return possible
 

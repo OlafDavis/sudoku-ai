@@ -36,13 +36,15 @@ def draw_board(screen, game):
         for row, col in group:
             pygame.draw.rect(screen, LIGHT_RED, 
                            (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
-        # Draw target sum in the middle of the group
-        font = pygame.font.Font(None, 24)
+        
+        # Draw target sum in the top-left corner of the group
+        font = pygame.font.Font(None, 20)  # Smaller font size
         text = font.render(str(target_sum), True, RED)
-        # Calculate center position between the two cells
-        x = (group[0][1] + group[1][1]) * CELL_SIZE // 2
-        y = (group[0][0] + group[1][0]) * CELL_SIZE // 2
-        text_rect = text.get_rect(center=(x + CELL_SIZE // 2, y + CELL_SIZE // 2))
+        # Find the top-left cell in the group
+        min_row = min(r for r, _ in group)
+        min_col = min(c for _, c in group)
+        # Position text in the top-left corner of the top-left cell
+        text_rect = text.get_rect(topleft=(min_col * CELL_SIZE + 2, min_row * CELL_SIZE + 2))
         screen.blit(text, text_rect)
     
     # Draw numbers

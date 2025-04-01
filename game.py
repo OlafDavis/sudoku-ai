@@ -23,35 +23,84 @@ class Sudoku:
         self.solved = False
 
     def generate_groups(self):
-        # Create 5 random pairs of adjacent cells that sum to 10
-        possible_pairs = []
-        # Generate all possible adjacent pairs
+        # Create groups of exactly 3 cells that sum to a target number
+        possible_groups = []
+        
+        # Generate all possible 3-cell L shapes
+        for i in range(8):
+            for j in range(8):
+                # L shape pointing right and down
+                l_shape1 = [(i, j), (i, j+1), (i+1, j)]
+                possible_groups.append(l_shape1)
+                # L shape pointing right and up
+                l_shape2 = [(i, j), (i, j+1), (i-1, j)]
+                if i > 0:
+                    possible_groups.append(l_shape2)
+                # L shape pointing left and down
+                l_shape3 = [(i, j), (i, j-1), (i+1, j)]
+                if j > 0:
+                    possible_groups.append(l_shape3)
+                # L shape pointing left and up
+                l_shape4 = [(i, j), (i, j-1), (i-1, j)]
+                if i > 0 and j > 0:
+                    possible_groups.append(l_shape4)
+        
+        # Generate all possible 3-cell lines
         for i in range(9):
-            for j in range(9):
-                # Check right
-                if j < 8:
-                    possible_pairs.append([(i, j), (i, j + 1)])
-                # Check down
-                if i < 8:
-                    possible_pairs.append([(i, j), (i + 1, j)])
+            for j in range(7):
+                # Horizontal line
+                h_line = [(i, j), (i, j+1), (i, j+2)]
+                possible_groups.append(h_line)
+                # Vertical line
+                v_line = [(j, i), (j+1, i), (j+2, i)]
+                possible_groups.append(v_line)
         
-        # Randomly select pairs until we find 5 that sum to 10 in the solution
-        selected_pairs = []
-        random.shuffle(possible_pairs)
+        # Randomly select groups until we find 4 that sum to a target number and don't overlap or touch
+        selected_groups = []
+        random.shuffle(possible_groups)
         
-        for pair in possible_pairs:
-            if len(selected_pairs) >= 5:
-                break
-                
-            # Check if the numbers in these cells sum to 10
-            num1 = self.solution[pair[0][0], pair[0][1]]
-            num2 = self.solution[pair[1][0], pair[1][1]]
+        def cells_adjacent(cell1, cell2):
+            """Check if two cells are adjacent (including diagonally)."""
+            r1, c1 = cell1
+            r2, c2 = cell2
+            return abs(r1 - r2) <= 1 and abs(c1 - c2) <= 1
+        
+        def groups_overlap_or_touch(group1, group2):
+            """Check if two groups share any cells or have adjacent cells."""
+            # Check for overlapping cells
+            if any(cell in group2 for cell in group1):
+                return True
             
-            if num1 + num2 == 10:
-                selected_pairs.append(pair)
+            # Check for adjacent cells
+            for cell1 in group1:
+                for cell2 in group2:
+                    if cells_adjacent(cell1, cell2):
+                        return True
+            
+            return False
         
-        # Store the pairs and their target sum
-        self.groups = [(pair, 10) for pair in selected_pairs]
+        for group in possible_groups:
+            if len(selected_groups) >= 4:
+                break
+            
+            # Calculate the sum of numbers in this group
+            group_sum = sum(self.solution[r, c] for r, c in group)
+            
+            # Only select groups where the sum is between 15 and 20
+            # (reasonable range for 3 numbers from 1-9)
+            if 15 <= group_sum <= 20:
+                # Check if this group overlaps or touches any already selected groups
+                overlaps = False
+                for selected_group, _ in selected_groups:
+                    if groups_overlap_or_touch(group, selected_group):
+                        overlaps = True
+                        break
+                
+                if not overlaps:
+                    selected_groups.append((group, group_sum))
+        
+        # Store the groups and their target sums
+        self.groups = selected_groups
 
     def handle_click(self, pos, cell_size):
         x, y = pos
