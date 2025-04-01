@@ -1,0 +1,65 @@
+import pygame
+
+# Constants
+WINDOW_SIZE = 540
+CELL_SIZE = WINDOW_SIZE // 9
+GRID_SIZE = 9
+BUTTON_HEIGHT = 80
+
+# Colors
+WHITE = (255, 255, 255)
+BLACK = (0, 0, 0)
+GRAY = (128, 128, 128)
+BLUE = (0, 0, 255)
+RED = (255, 0, 0)
+GREEN = (0, 128, 0)
+PURPLE = (128, 0, 128)
+
+def draw_board(screen, game):
+    # Draw grid lines
+    for i in range(10):
+        # Vertical lines
+        pygame.draw.line(screen, BLACK, (i * CELL_SIZE, 0), (i * CELL_SIZE, WINDOW_SIZE))
+        # Horizontal lines
+        pygame.draw.line(screen, BLACK, (0, i * CELL_SIZE), (WINDOW_SIZE, i * CELL_SIZE))
+    
+    # Draw thicker lines for 3x3 boxes
+    for i in range(0, 10, 3):
+        pygame.draw.line(screen, BLACK, (i * CELL_SIZE, 0), (i * CELL_SIZE, WINDOW_SIZE), 2)
+        pygame.draw.line(screen, BLACK, (0, i * CELL_SIZE), (WINDOW_SIZE, i * CELL_SIZE), 2)
+    
+    # Draw numbers
+    font = pygame.font.Font(None, 40)
+    for i in range(9):
+        for j in range(9):
+            if game.board[i, j] != 0:
+                color = BLUE if (i, j) in game.original_numbers else BLACK
+                text = font.render(str(game.board[i, j]), True, color)
+                text_rect = text.get_rect(center=(j * CELL_SIZE + CELL_SIZE // 2,
+                                                i * CELL_SIZE + CELL_SIZE // 2))
+                screen.blit(text, text_rect)
+    
+    # Draw selected cell
+    if game.selected:
+        row, col = game.selected
+        pygame.draw.rect(screen, RED, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 2)
+
+def draw_button(screen, text, rect, color):
+    pygame.draw.rect(screen, color, rect)
+    font = pygame.font.Font(None, 36)
+    text_surface = font.render(text, True, WHITE)
+    text_rect = text_surface.get_rect(center=rect.center)
+    screen.blit(text_surface, text_rect)
+    return rect
+
+def create_buttons():
+    button_width = 220
+    button_spacing = 20
+    total_buttons_width = button_width * 2 + button_spacing
+    start_x = (WINDOW_SIZE - total_buttons_width) // 2
+    button_y = WINDOW_SIZE + 5
+    
+    reveal_button = pygame.Rect(start_x, button_y, button_width, 30)
+    solve_button = pygame.Rect(start_x + button_width + button_spacing, button_y, button_width, 30)
+    
+    return reveal_button, solve_button, start_x 
