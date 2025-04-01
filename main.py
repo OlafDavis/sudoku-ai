@@ -36,6 +36,7 @@ class Sudoku:
         self.solve_delay = 0.05  # Delay between steps in seconds
         self.last_solve_time = 0
         self.filled_cells = []  # Keep track of cells we've filled during solving
+        self.tried_numbers = {}  # Keep track of numbers tried for each cell
         self.generate_puzzle()
 
     def generate_puzzle(self):
@@ -176,17 +177,24 @@ class Sudoku:
             for i in range(9):
                 for j in range(9):
                     if self.board[i, j] == 0:
-                        # Try numbers 1-9
+                        # Initialize tried numbers for this cell if not exists
+                        if (i, j) not in self.tried_numbers:
+                            self.tried_numbers[(i, j)] = set()
+                        
+                        # Try numbers 1-9 that haven't been tried yet
                         for num in range(1, 10):
-                            if self.is_valid_move(num, (i, j), self.board):
+                            if num not in self.tried_numbers[(i, j)] and self.is_valid_move(num, (i, j), self.board):
                                 self.board[i, j] = num
                                 self.filled_cells.append((i, j))  # Track this cell
                                 self.last_solve_time = current_time
                                 return True
+                        
                         # If no valid number found, backtrack
                         if self.filled_cells:  # If we have cells to backtrack
                             last_i, last_j = self.filled_cells.pop()  # Get the last filled cell
                             self.board[last_i, last_j] = 0  # Clear it
+                            # Add the number we just tried to the tried_numbers set
+                            self.tried_numbers[(last_i, last_j)].add(self.board[last_i, last_j])
                             return True
                         else:  # If we can't backtrack anymore, puzzle is unsolvable
                             self.solving = False
@@ -203,10 +211,12 @@ class Sudoku:
             self.solving = True
             self.last_solve_time = 0
             self.filled_cells = []  # Reset the filled cells list
+            self.tried_numbers = {}  # Reset the tried numbers dictionary
 
     def stop_solving(self):
         self.solving = False
         self.filled_cells = []  # Clear the filled cells list
+        self.tried_numbers = {}  # Clear the tried numbers dictionary
 
 def draw_board(screen, game):
     # Draw grid lines
