@@ -14,6 +14,7 @@ BLUE = (0, 0, 255)
 RED = (255, 0, 0)
 GREEN = (0, 128, 0)
 PURPLE = (128, 0, 128)
+LIGHT_BLUE = (200, 230, 255)  # New color for current cell highlight
 
 def draw_board(screen, game):
     # Draw grid lines
@@ -43,6 +44,11 @@ def draw_board(screen, game):
     if game.selected:
         row, col = game.selected
         pygame.draw.rect(screen, RED, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE), 2)
+    
+    # Draw current cell being examined by solver
+    if game.solver and game.solver.current_cell:
+        row, col = game.solver.current_cell
+        pygame.draw.rect(screen, LIGHT_BLUE, (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
 
 def draw_button(screen, text, rect, color):
     pygame.draw.rect(screen, color, rect)
