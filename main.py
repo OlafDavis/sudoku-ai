@@ -267,8 +267,11 @@ def main():
     start_x = (WINDOW_SIZE - total_buttons_width) // 2
     button_y = WINDOW_SIZE + 5
     
+    # Store original button positions
     reveal_button = pygame.Rect(start_x, button_y, button_width, 30)
     solve_button = pygame.Rect(start_x + button_width + button_spacing, button_y, button_width, 30)
+    original_reveal_x = reveal_button.x
+    original_solve_x = solve_button.x
     
     while running:
         for event in pygame.event.get():
@@ -279,12 +282,13 @@ def main():
                 if reveal_button.collidepoint(event.pos):
                     if game.solved:
                         game.reset_puzzle()
+                        # Restore original button positions
+                        reveal_button.x = original_reveal_x
+                        solve_button.x = original_solve_x
                     else:
                         game.reveal_solution()
                 elif solve_button.collidepoint(event.pos):
-                    if game.solved:
-                        game.reset_puzzle()
-                    else:
+                    if not game.solved:  # Only allow solving if not already solved
                         game.start_solving()
                 else:
                     # Adjust y-coordinate for the game board click
@@ -304,13 +308,20 @@ def main():
         draw_board(screen, game)
         
         # Draw buttons
-        reveal_text = "Reset" if game.solved else "Reveal Solution"
-        reveal_color = GREEN if game.solved else BLUE
-        draw_button(screen, reveal_text, reveal_button, reveal_color)
-        
-        solve_text = "Reset" if game.solved else "Solve Step by Step"
-        solve_color = GREEN if game.solved else PURPLE
-        draw_button(screen, solve_text, solve_button, solve_color)
+        if game.solved:
+            # When solved, show only the Reset button in the center
+            reveal_button.centerx = WINDOW_SIZE // 2
+            reveal_text = "Reset"
+            reveal_color = GREEN
+            draw_button(screen, reveal_text, reveal_button, reveal_color)
+        else:
+            # When not solved, show both buttons
+            reveal_text = "Reveal Solution"
+            reveal_color = BLUE
+            draw_button(screen, reveal_text, reveal_button, reveal_color)
+            
+            solve_text = "Solve Step by Step"
+            draw_button(screen, solve_text, solve_button, PURPLE)
         
         pygame.display.flip()
         clock.tick(60)
