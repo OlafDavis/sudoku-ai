@@ -15,6 +15,7 @@ RED = (255, 0, 0)
 GREEN = (0, 128, 0)
 PURPLE = (128, 0, 128)
 LIGHT_BLUE = (200, 230, 255)  # New color for current cell highlight
+LIGHT_RED = (255, 200, 200)  # New color for group highlighting
 
 def draw_board(screen, game):
     # Draw grid lines
@@ -28,6 +29,21 @@ def draw_board(screen, game):
     for i in range(0, 10, 3):
         pygame.draw.line(screen, BLACK, (i * CELL_SIZE, 0), (i * CELL_SIZE, WINDOW_SIZE), 2)
         pygame.draw.line(screen, BLACK, (0, i * CELL_SIZE), (WINDOW_SIZE, i * CELL_SIZE), 2)
+    
+    # Draw groups
+    for group, target_sum in game.groups:
+        # Draw light red background for the group
+        for row, col in group:
+            pygame.draw.rect(screen, LIGHT_RED, 
+                           (col * CELL_SIZE, row * CELL_SIZE, CELL_SIZE, CELL_SIZE))
+        # Draw target sum in the middle of the group
+        font = pygame.font.Font(None, 24)
+        text = font.render(str(target_sum), True, RED)
+        # Calculate center position between the two cells
+        x = (group[0][1] + group[1][1]) * CELL_SIZE // 2
+        y = (group[0][0] + group[1][0]) * CELL_SIZE // 2
+        text_rect = text.get_rect(center=(x + CELL_SIZE // 2, y + CELL_SIZE // 2))
+        screen.blit(text, text_rect)
     
     # Draw numbers
     font = pygame.font.Font(None, 40)

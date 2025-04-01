@@ -2,8 +2,9 @@ import numpy as np
 import time
 
 class SudokuSolver:
-    def __init__(self, board, solve_delay=0.05):
+    def __init__(self, board, groups=None, solve_delay=0.05):
         self.board = board
+        self.groups = groups or []  # List of tuples: ([(row1, col1), (row2, col2)], target_sum)
         self.solve_delay = solve_delay
         self.last_solve_time = 0
         self.solving = False
@@ -23,6 +24,22 @@ class SudokuSolver:
         box_row, box_col = 3 * (row // 3), 3 * (col // 3)
         if num in self.board[box_row:box_row+3, box_col:box_col+3]:
             return False
+        
+        # Check group constraints
+        for group, target_sum in self.groups:
+            if pos in group:
+                # Find the other cell in the group
+                other_cell = group[0] if pos == group[1] else group[1]
+                other_value = self.board[other_cell[0], other_cell[1]]
+                
+                # If the other cell is filled, check if sum matches target
+                if other_value != 0:
+                    if num + other_value != target_sum:
+                        return False
+                # If the other cell is empty, check if the number is too large
+                elif num > target_sum - 1:  # -1 because minimum value is 1
+                    return False
+        
         return True
 
     def get_possible_numbers(self, pos):
@@ -44,6 +61,24 @@ class SudokuSolver:
         box_row, box_col = 3 * (row // 3), 3 * (col // 3)
         box_numbers = set(self.board[box_row:box_row+3, box_col:box_col+3].flatten())
         possible -= box_numbers
+        
+        # Apply group constraints
+        for group, target_sum in self.groups:
+            if pos in group:
+                # Find the other cell in the group
+                other_cell = group[0] if pos == group[1] else group[1]
+                other_value = self.board[other_cell[0], other_cell[1]]
+                
+                if other_value != 0:
+                    # If other cell is filled, only allow the number that makes sum = target
+                    required = target_sum - other_value
+                    if required in possible:
+                        possible = {required}
+                    else:
+                        possible = set()
+                else:
+                    # If other cell is empty, remove numbers that would make sum > target
+                    possible = {n for n in possible if n <= target_sum - 1}
         
         return possible
 
